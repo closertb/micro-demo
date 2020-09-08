@@ -128,6 +128,7 @@
       return outPkgs;
     }
   
+    // url 拼接
     function parseImportMap (json, baseUrl) {
       const imports = resolvePackages(json.imports, baseUrl) || {};
       const scopes = {};
@@ -141,6 +142,7 @@
         }
       }
   
+      console.log('output', { imports: imports, scopes: scopes });
       return { imports: imports, scopes: scopes };
     }
   
@@ -475,7 +477,10 @@
     systemJSPrototype.register = function (deps, declare) {
       systemRegister.call(this, deps, declare);
     };
-  
+
+    // 加载资源，利用script标签异步加载，加载完交给register 处理
+    // 看是否有对应依赖，其具体实现是依赖amd.js 中define方法，script加载后，就会
+    // 执行这个方法，就会把依赖注册到deps中；
     systemJSPrototype.instantiate = function (url, firstParentUrl) {
       const loader = this;
       if (url.substr(-5) === '.json') {
@@ -682,20 +687,23 @@
      * <script type="systemjs-importmap">{}</script>
      * OR
      * <script type="systemjs-importmap" src=package.json></script>
-     * 
+     * 只有在SystemJS 初始化时，这些导入映射依赖图才回被加载，且是按序的
      * Only those import maps available at the time of SystemJS initialization will be loaded
      * and they will be loaded in DOM order.
-     * 
+     * 没有动态加载，全局只会加载一次
      * There is no support for dynamic import maps injection currently.
      */
   
     const baseMap = Object.create(null);
     baseMap.imports = Object.create(null);
     baseMap.scopes = Object.create(null);
+    // 依赖映射图
     let importMapPromise = Promise.resolve(baseMap);
+    // 映射图获取标志
     let acquiringImportMaps = typeof document !== 'undefined';
   
     if (acquiringImportMaps) {
+      // 配置了src属性的，直接利用fetch从远程获取映射
       Array.prototype.forEach.call(document.querySelectorAll('script[type="systemjs-importmap"][src]'), function (script) {
         script._j = fetch(script.src).then(function (resp) {
           return resp.json();
@@ -713,13 +721,16 @@
       return originalMap;
     }
   
+    // 干了两件事，加载importMap, 返回id 对应的资源地址
     systemJSPrototype.resolve = function (id, parentUrl) {
       parentUrl = parentUrl || baseUrl;
   
       if (acquiringImportMaps) {
+        // 这里确保了，全局只会加载一次，不存在动态加载；
         acquiringImportMaps = false;
         Array.prototype.forEach.call(document.querySelectorAll('script[type="systemjs-importmap"]'), function (script) {
           importMapPromise = importMapPromise.then(function (map) {
+            // 先取初始化时远程加载的数据，若没有，从远程取，内联内容保底
             return (script._j || script.src && fetch(script.src).then(function (resp) {return resp.json()}) || Promise.resolve(JSON.parse(script.innerHTML)))
             .then(function (json) {
               return mergeImportMap(map, parseImportMap(json, script.src || baseUrl));
@@ -730,6 +741,7 @@
   
       return importMapPromise
       .then(function (importMap) {
+        console.log('map', id, importMap);
         return resolveImportMap(id, parentUrl, importMap);
       });
     };

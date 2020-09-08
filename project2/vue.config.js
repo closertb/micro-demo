@@ -23,5 +23,6 @@ module.exports = {
             }
         }))
     },
+    
     outputDir: path.resolve(__dirname, '../portal/build/project2')
 }

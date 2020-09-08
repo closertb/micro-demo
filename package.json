@@ -1,0 +1,20 @@
+{
+  "name": "microfront-end-single-spa",
+  "version": "1.0.0",
+  "description": "利用single-spa搭建的一个微前端架构，其中各个小型应用具有独立部署、独立运行、允许存在独立仓储的特性。由portal项目实现各个应用的组合",
+  "main": "index.js",
+  "scripts": {
+    "start": "concurrently 'cd menu && npm run dev' 'cd project1 && npm run dev' 'cd project2 && npm run dev' 'cd portal && npm run start' 'cd portal/common-deps-static && serve -p 8000 --cors'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/closertb/micro-demo.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/closertb/micro-demo/issues"
+  },
+  "homepage": "https://github.com/closertb/micro-demo#readme"
+}
